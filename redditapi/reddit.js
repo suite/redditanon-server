@@ -1,14 +1,22 @@
 const rp = require("request-promise");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = class RedditClient {
   constructor() {
-    this.accounts = [
-      { username: "altinator5000", password: "SDFkl324" },
-      { username: "notanalt500", password: "FDdf77333" }
-    ];
+    this.accounts = fs
+      .readFileSync(path.join(__dirname, "../utils/accounts.txt"), "utf8")
+      .split("\r\n");
+
+    this.proxies = fs
+      .readFileSync(path.join(__dirname, "../utils/proxies.txt"), "utf8")
+      .split("\r\n");
   }
 
   async login(account) {
+    let username = account.split(":")[0];
+    let password = account.split(":")[1];
+
     const opts = {
       url: "https://www.reddit.com/loginproxy",
       method: "POST",
@@ -21,8 +29,8 @@ module.exports = class RedditClient {
           "Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Mobile Safari/537.36"
       },
       json: {
-        username: account["username"],
-        password: account["password"],
+        username,
+        password,
         otp: ""
       }
     };
@@ -31,7 +39,7 @@ module.exports = class RedditClient {
       const body = await rp(opts);
       return body["session"]["accessToken"];
     } catch (err) {
-      throw Error(`Error logging into ${account["username"]} ${err.message}`);
+      throw Error(`Error logging into ${username} ${err.message}`);
     }
   }
 
@@ -42,7 +50,11 @@ module.exports = class RedditClient {
       Math.floor(Math.random() * this.accounts.length)
     ];
 
-    console.log(`Using ${randAccount["username"]}...`);
+    const randProxy = this.proxies[
+      Math.floor(Math.random() * this.proxies.length)
+    ];
+
+    console.log(`Using ${randAccount}...`);
 
     let accessToken = await this.login(randAccount);
 
@@ -63,6 +75,7 @@ module.exports = class RedditClient {
         text: contentText,
         raw_json: "1"
       },
+      proxy: randProxy,
       resolveWithFullResponse: true
     };
 
@@ -70,15 +83,10 @@ module.exports = class RedditClient {
       let resp = await rp(opts);
       resp = JSON.parse(resp.body);
 
-      console.log(JSON.stringify(resp["json"]["errors"]));
+      //Retry if rate limited... Needs more proxies
       if (resp["json"]["errors"].length > 0) {
         throw Error("Rate limited");
       }
-
-      console.log(
-        "reply resp",
-        resp["json"]["data"]["things"][0]["data"]["permalink"]
-      );
 
       return resp["json"]["data"]["things"][0]["data"]["permalink"];
     } catch (err) {

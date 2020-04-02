@@ -4,10 +4,11 @@ const { body, validationResult } = require("express-validator");
 const express = require("express");
 const app = express();
 const port = 3000;
+const client = new RedditClient();
 
 app.use(express.json());
 
-app.get("/", (req, res) => res.status(200).send("Hello World!"));
+app.get("/", (req, res) => res.status(200).send("Working!"));
 
 app.post(
   "/",
@@ -34,7 +35,7 @@ app.post(
     }
 
     try {
-      let url = await new RedditClient().commentRandom(req.body);
+      let url = await client.commentRandom(req.body);
       console.log("server got url", url);
       res.status(200).json({ url });
     } catch (err) {
