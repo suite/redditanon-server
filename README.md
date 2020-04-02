@@ -1,5 +1,5 @@
 # redditanon-server
-RedditAnon chrome extension server.
+[RedditAnon](https://github.com/suite/redditanon)  chrome extension server.
 
 ### Installation
 Config:
